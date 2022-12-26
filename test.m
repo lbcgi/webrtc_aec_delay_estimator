@@ -1,0 +1,180 @@
+param.PART_LEN = 64;
+param.FRAME_LEN = 80;
+param.PART_LEN1 = param.PART_LEN + 1;
+param.PART_LEN2 = param.PART_LEN*2;
+param.NUM_HIGH_BANDS_MAX = 2;
+param.kHistorySizeBlocks = 125;
+param.kLookaheadBlocks = 15;
+param.kInitialShiftOffset = 5;
+param.kMaxBitCountsQ9 = 32*2^9;
+param.kDelayQualityThresholdMax = 0.07;
+param.kDelayQualityThresholdMin = 0.01;
+param.kNormalNumPartitions = 12;
+
+param.kShiftsAtZero = 13;
+param.kShiftsLinearSlope = 3;
+
+param.kProbabilityOffset = 1024;  
+param.kProbabilityLowerLimit = 8704; 
+param.kProbabilityMinSpread = 2816;
+
+param.kHistogramMax = 3000;
+param.kLastHistogramMax = 250;
+param.kMinHistogramThreshold = 1.5;
+param.kMinRequiredHits = 10;
+param.kMaxHitsWhenPossiblyNonCausal = 10;
+param.kMaxHitsWhenPossiblyCausal = 1000;
+param.kQ14Scaling = 1 / (1 *2^14);  %// Scaling by 2^14 to get Q0.
+param.kFractionSlope = 0.05;
+param.kMinFractionWhenPossiblyCausal = 0.5;
+param.kMinFractionWhenPossiblyNonCausal = 0.25;
+param.kBandFirst = 12;
+param.kBandLast = 43;
+
+
+
+
+%%WebRtcAec_CreateAec
+aec.nearend_buffer_size = 0;
+aec.output_buffer_size = param.PART_LEN - (param.FRAME_LEN - param.PART_LEN);
+aec.output_buffer = zeros(param.NUM_HIGH_BANDS_MAX + 1, 2*param.PART_LEN);
+aec.nearend_buffer = zeros(param.NUM_HIGH_BANDS_MAX + 1, 2*param.PART_LEN);
+aec.system_delay = 0;
+
+
+%%WebRtc_CreateDelayEstimatorFarend
+spectrum_size = param.PART_LEN1;
+history_size = param.kHistorySizeBlocks;
+aec.delay_estimator_farend.binary_farend.binary_far_history = zeros(1,history_size);
+aec.delay_estimator_farend.binary_farend.far_bit_counts = zeros(1,history_size);
+aec.delay_estimator_farend.binary_farend.history_size = history_size;
+aec.delay_estimator_farend.spectrum_size = spectrum_size;
+self.spectrum_size = param.PART_LEN1;
+aec.delay_estimator_farend.mean_far_spectrum = repmat(struct('float_',0,'int32_',0), self.spectrum_size, 1 ); 
+aec.delay_estimator_farend.far_spectrum_initialized = 0;
+
+%%WebRtc_CreateDelayEstimator
+farend = aec.delay_estimator_farend;
+max_lookahead = param.kHistorySizeBlocks;
+aec.delay_estimator.binary_handle.farend = aec.delay_estimator_farend.binary_farend;
+aec.delay_estimator.binary_handle.near_history_size = max_lookahead + 1;
+aec.delay_estimator.binary_handle.history_size = history_size;
+aec.delay_estimator.binary_handle.robust_validation_enabled = 0;
+aec.delay_estimator.binary_handle.allowed_offset = 0;
+aec.delay_estimator.binary_handle.lookahead = max_lookahead;
+aec.delay_estimator.binary_handle.mean_bit_counts = zeros(1, (history_size + 1));
+aec.delay_estimator.binary_handle.bit_counts = zeros(1, history_size);
+aec.delay_estimator.binary_handle.histogram = zeros(1, (history_size + 1));
+max_lookahead = param.kHistorySizeBlocks;
+aec.delay_estimator.binary_handle.binary_near_history = zeros(1,(max_lookahead + 1));
+aec.delay_estimator.mean_near_spectrum = zeros(1, farend.spectrum_size);
+aec.delay_estimator.spectrum_size = farend.spectrum_size;
+
+%%
+aec.delay_logging_enabled = 1;
+aec.delay_agnostic_enabled = 0;
+%%WebRtc_set_lookahead
+aec.delay_estimator.binary_handle.lookahead = param.kLookaheadBlocks;
+aec.extended_filter_enabled = 0;
+aec.refined_adaptive_filter_enabled = 0;
+
+%%init AEC
+%WebRtc_InitDelayEstimatorFarend
+self = aec.delay_estimator_farend;
+selfb = self.binary_farend;
+selfb.binary_far_history = zeros(1, selfb.history_size);
+selfb.far_bit_counts = zeros(1, selfb.history_size);
+self.binary_farend = selfb;
+%Set averaged far and near end spectra to zero.
+self.mean_far_spectrum = repmat(struct('float_',0,'int32_',0), self.spectrum_size, 1 );
+self.far_spectrum_initialized = 0;
+aec.delay_estimator_farend = self;
+%WebRtc_InitDelayEstimator
+self = aec.delay_estimator;
+%Initialize binary delay estimator.
+selfb = aec.delay_estimator.binary_handle;
+selfb.bit_counts = zeros(1, selfb.history_size);
+selfb.binary_near_history = zeros(1, selfb.near_history_size);
+selfb.mean_bit_counts = ones(1, selfb.history_size)*20*2^9;
+selfb.histogram = zeros(1, selfb.history_size);
+selfb.minimum_probability = param.kMaxBitCountsQ9;  %// 32 in Q9.
+selfb.last_delay_probability = param.kMaxBitCountsQ9; % // 32 in Q9.
+% Default return value if we're unable to estimate. -1 is used for errors.
+selfb.last_delay = -2;
+selfb.last_candidate_delay = -2;
+selfb.compare_delay = selfb.history_size - 1;
+selfb.candidate_hits = 0;
+selfb.last_delay_histogram = 0;
+self.binary_handle = selfb;
+%Set averaged far and near end spectra to zero.
+self.mean_near_spectrum = repmat(struct('float_',0,'int32_',0), self.spectrum_size, 1 ); 
+% Reset initialization indicators.
+self.near_spectrum_initialized = 0;
+aec.delay_estimator = self;
+
+
+aec.delay_logging_enabled = true;
+aec.delay_metrics_delivered = 0;
+aec.delay_histogram = zeros(1, param.kHistorySizeBlocks);
+aec.num_delay_values = 0;
+aec.delay_median = -1;
+aec.delay_std = -1;
+aec.fraction_poor_delays = -1.0;
+aec.previous_delay = -2;
+aec.delay_correction_count = 0;
+aec.shift_offset = param.kInitialShiftOffset;
+aec.delay_quality_threshold = param.kDelayQualityThresholdMin;
+aec.num_partitions = param.kNormalNumPartitions;
+aec.delay_estimator.binary_handle.allowed_offset = aec.num_partitions/2;
+aec.frame_count = 0;
+aec.knownDelay = 0;
+% aec.noisePow = aec.dInitMinPow;
+aec.noiseEstCtr = 0;
+% Metrics disabled by default
+aec.metricsMode = 0;
+% InitMetrics(aec);
+%% Config AEC
+
+
+
+
+
+
+% [delay_estimate, aec.delay_estimator] = WebRtc_DelayEstimatorProcessFloat(aec.delay_estimator, abs_near_spectrum, param);
+% delay_estimate 
+% if (delay_estimate >= 0) 
+% %         // Update delay estimate buffer.
+%         aec.delay_histogram(delay_estimate + 1) = aec.delay_histogram(delay_estimate + 1) + 1;
+%         aec.num_delay_values = aec.num_delay_values + 1;
+% end
+% 
+% move_elements = SignalBasedDelayCorrection(aec);
+% % moved_elements = aec.farend_block_buffer_.AdjustSize(move_elements);
+% %%debug
+% moved_elements = move_elements;
+% [~, aec.delay_estimator] = WebRtc_SoftResetDelayEstimator(aec.delay_estimator, moved_elements);
+% aec.delay_estimator_farend = WebRtc_SoftResetDelayEstimatorFarend(aec.delay_estimator_farend,...
+%                                            moved_elements);
+              
+sig_len = 10000;
+delay = 600;
+s = randn(sig_len, 1);
+x = [s;zeros(delay,1)] ;
+d = [zeros(delay,1);s];
+bs = 128;
+frms = floor(length(s)/bs);
+st = 1;
+for p = 1:frms
+    abs_near_spectrum = abs(fft(d(st:st + bs)));
+    abs_far_spectrum = abs(fft(x(st:st + bs)));
+    aec.delay_estimator_farend = WebRtc_AddFarSpectrumFloat(aec.delay_estimator_farend,...
+                                   abs_far_spectrum, param);
+    aec.delay_estimator.binary_handle.farend = aec.delay_estimator_farend.binary_farend;
+    if(p>5)
+        [delay_estimate, aec.delay_estimator] = WebRtc_DelayEstimatorProcessFloat(aec.delay_estimator, abs_near_spectrum, param);
+        delay_estimate 
+    end
+    st = st + bs;
+end
+                                       
+

@@ -1,0 +1,9 @@
+function self = WebRtc_AddFarSpectrumFloat(self,...
+                                far_spectrum,...
+                                param) 
+%   // Get binary spectrum.
+  [binary_spectrum, self.mean_far_spectrum, self.far_spectrum_initialized] = BinarySpectrumFloat(far_spectrum, self.mean_far_spectrum,...
+                                        self.far_spectrum_initialized, param);
+  self.binary_farend = WebRtc_AddBinaryFarSpectrum(self.binary_farend, binary_spectrum);
+
+  

@@ -1,0 +1,24 @@
+function self = WebRtc_SoftResetBinaryDelayEstimatorFarend(...
+    self, delay_shift) 
+  abs_shift = abs(delay_shift);
+  dest_index = 0;
+  src_index = 0;
+  padding_index = 0;
+
+%   RTC_DCHECK(self);
+  shift_size = self.history_size - abs_shift;
+%   RTC_DCHECK_GT(shift_size, 0);
+  if (delay_shift == 0) 
+    return;
+  elseif (delay_shift > 0) 
+    dest_index = abs_shift;
+  elseif (delay_shift < 0) 
+    src_index = abs_shift;
+    padding_index = shift_size;
+  end
+%   // Shift and zero pad buffers.
+    self.binary_far_history(dest_index + (1:shift_size)) = self.binary_far_history(src_index + (1:shift_size));
+    self.binary_far_history(padding_index + (1:abs_shift)) = 0;
+    self.far_bit_counts(dest_index + (1:shift_size)) = self.binary_far_history(src_index + (1:shift_size));
+    self.far_bit_counts(padding_index + (1:abs_shift)) = 0;
+  end

@@ -1,0 +1,20 @@
+function is_robust = RobustValidation(self, candidate_delay, is_instantaneous_valid, is_histogram_valid) 
+
+%   // The final robust validation is based on the two algorithms; 1) the
+%   // |is_instantaneous_valid| and 2) the histogram based with result stored in
+%   // |is_histogram_valid|.
+%   //   i) Before we actually have a valid estimate (|last_delay| == -2), we say
+%   //      a candidate is valid if either algorithm states so
+%   //      (|is_instantaneous_valid| OR |is_histogram_valid|).
+   is_robust = (self.last_delay < 0) &&...
+      (is_instantaneous_valid || is_histogram_valid);
+%   //  ii) Otherwise, we need both algorithms to be certain
+%   //      (|is_instantaneous_valid| AND |is_histogram_valid|)
+  is_robust = is_robust | (is_instantaneous_valid && is_histogram_valid);
+%   // iii) With one exception, i.e., the histogram based algorithm can overrule
+%   //      the instantaneous one if |is_histogram_valid| = 1 and the histogram
+%   //      is significantly strong.
+  is_robust = is_robust | (is_histogram_valid &&...
+      (self.histogram(candidate_delay + 1) > self.last_delay_histogram));
+
+end
