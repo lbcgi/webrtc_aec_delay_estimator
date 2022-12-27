@@ -27,7 +27,7 @@ function delay_correction = SignalBasedDelayCorrection(self, param)
   last_delay = WebRtc_last_delay(self.delay_estimator);
 %   self->data_dumper->DumpRaw("aec_da_reported_delay", 1, &last_delay);
   if ((last_delay >= 0) && (last_delay ~= self.previous_delay) &&...
-      (WebRtc_last_delay_quality(self.delay_estimator) >...
+      (WebRtc_last_delay_quality(self.delay_estimator, param) >...
        self.delay_quality_threshold))
          delay = last_delay - WebRtc_lookahead(self.delay_estimator);
 %     // Allow for a slack in the actual delay, defined by a |lower_bound| and an
@@ -39,7 +39,7 @@ function delay_correction = SignalBasedDelayCorrection(self, param)
     do_correction = delay <= lower_bound || delay > upper_bound;
     if (do_correction == 1) 
 %       available_read = self.farend_block_buffer_.Size();
-        available_read = xxxx;
+        available_read = 7777;
 %       // With |shift_offset| we gradually rely on the delay estimates.  For
 %       // positive delays we reduce the correction by |shift_offset| to lower the
 %       // risk of pushing the AEC into a non causal state.  For negative delays

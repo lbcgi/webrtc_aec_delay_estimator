@@ -26,7 +26,8 @@ function [delay_est, self] = WebRtc_ProcessBinarySpectrum(self, binary_near_spec
           self.mean_bit_counts(i + 1) = WebRtc_MeanEstimatorFix(bit_count, shifts, self.mean_bit_counts(i + 1));
         end
       end
-     
+%      plot(self.bit_counts);
+%      pause(0.3);
 %        Find |candidate_delay|, |value_best_candidate| and |value_worst_candidate|
 %   of |mean_bit_counts|.
     for i = 0:self.history_size - 1

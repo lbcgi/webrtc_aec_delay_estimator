@@ -31,16 +31,12 @@ param.kMinFractionWhenPossiblyNonCausal = 0.25;
 param.kBandFirst = 12;
 param.kBandLast = 43;
 
-
-
-
 %%WebRtcAec_CreateAec
 aec.nearend_buffer_size = 0;
 aec.output_buffer_size = param.PART_LEN - (param.FRAME_LEN - param.PART_LEN);
 aec.output_buffer = zeros(param.NUM_HIGH_BANDS_MAX + 1, 2*param.PART_LEN);
 aec.nearend_buffer = zeros(param.NUM_HIGH_BANDS_MAX + 1, 2*param.PART_LEN);
 aec.system_delay = 0;
-
 
 %%WebRtc_CreateDelayEstimatorFarend
 spectrum_size = param.PART_LEN1;
@@ -112,7 +108,6 @@ self.mean_near_spectrum = repmat(struct('float_',0,'int32_',0), self.spectrum_si
 self.near_spectrum_initialized = 0;
 aec.delay_estimator = self;
 
-
 aec.delay_logging_enabled = true;
 aec.delay_metrics_delivered = 0;
 aec.delay_histogram = zeros(1, param.kHistorySizeBlocks);
@@ -135,11 +130,6 @@ aec.metricsMode = 0;
 % InitMetrics(aec);
 %% Config AEC
 
-
-
-
-
-
 % [delay_estimate, aec.delay_estimator] = WebRtc_DelayEstimatorProcessFloat(aec.delay_estimator, abs_near_spectrum, param);
 % delay_estimate 
 % if (delay_estimate >= 0) 
@@ -156,13 +146,13 @@ aec.metricsMode = 0;
 % aec.delay_estimator_farend = WebRtc_SoftResetDelayEstimatorFarend(aec.delay_estimator_farend,...
 %                                            moved_elements);
               
-sig_len = 10000;
-delay = 600;
+sig_len = 30000;
+delay = 2200;
 s = randn(sig_len, 1);
 x = [s;zeros(delay,1)] ;
 d = [zeros(delay,1);s];
 bs = 128;
-frms = floor(length(s)/bs);
+frms = floor(length(x)/bs);
 st = 1;
 for p = 1:frms
     abs_near_spectrum = abs(fft(d(st:st + bs)));
@@ -170,11 +160,14 @@ for p = 1:frms
     aec.delay_estimator_farend = WebRtc_AddFarSpectrumFloat(aec.delay_estimator_farend,...
                                    abs_far_spectrum, param);
     aec.delay_estimator.binary_handle.farend = aec.delay_estimator_farend.binary_farend;
-    if(p>5)
+%     if(p>5)
         [delay_estimate, aec.delay_estimator] = WebRtc_DelayEstimatorProcessFloat(aec.delay_estimator, abs_near_spectrum, param);
+%         plot(aec.delay_estimator.binary_handle.mean_bit_counts);
+%         pause(0.3)
         delay_estimate 
-    end
+%     end
     st = st + bs;
 end
-                                       
+   move_elements = SignalBasedDelayCorrection(aec, param)
+                                    
 

@@ -7,7 +7,7 @@ function quality = WebRtc_last_delay_quality(self, param)
   else 
 %     // Note that |last_delay_probability| states how deep the minimum of the
 %     // cost function is, so it is rather an error probability.
-    quality = (param.kMaxBitCountsQ9 - self.last_delay_probability) /...
+    quality = (param.kMaxBitCountsQ9 - selfb.last_delay_probability) /...
         param.kMaxBitCountsQ9;
     if (quality < 0) 
       quality = 0;
