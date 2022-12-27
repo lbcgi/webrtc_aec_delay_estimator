@@ -71,7 +71,7 @@ function [delay_est, self] = WebRtc_ProcessBinarySpectrum(self, binary_near_spec
     if (non_stationary_farend) 
 %     // Only update the validation statistics when the farend is nonstationary
 %     // as the underlying estimates are otherwise frozen.
-        UpdateRobustValidationStatistics(self, candidate_delay, valley_depth,...
+        self = UpdateRobustValidationStatistics(self, candidate_delay, valley_depth,...
                                      value_best_candidate, param);
     end
     

@@ -162,8 +162,8 @@ for p = 1:frms
     aec.delay_estimator.binary_handle.farend = aec.delay_estimator_farend.binary_farend;
 %     if(p>5)
         [delay_estimate, aec.delay_estimator] = WebRtc_DelayEstimatorProcessFloat(aec.delay_estimator, abs_near_spectrum, param);
-%         plot(aec.delay_estimator.binary_handle.mean_bit_counts);
-%         pause(0.3)
+        plot(aec.delay_estimator.binary_handle.histogram);
+        pause(0.3)
         delay_estimate 
 %     end
     st = st + bs;
